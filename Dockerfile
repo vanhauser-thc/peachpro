@@ -3,7 +3,7 @@ MAINTAINER vh@thc.org
 
 ARG DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update && apt-get upgrade -y
+RUN apt-get update
 
 RUN apt-get install -y \
     coreutils apt-utils wget curl openssl ca-certificates bash-completion \
@@ -18,6 +18,10 @@ RUN apt-get install -y \
     apt-transport-https dirmngr gnupg ca-certificates apt-utils
 
 RUN git clone https://gitlab.com/gitlab-org/security-products/protocol-fuzzer-ce
+
+# we have an issue with builing with pin 3.19, so we stick to the previous commit
+RUN cd protocol-fuzzer-ce && \
+    git checkout 5fe846112907c700b267f93dfb5d9431b5770795
 
 # Get specific mono packages
 WORKDIR /protocol-fuzzer-ce/paket/.paket
