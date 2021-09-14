@@ -19,9 +19,9 @@ RUN apt-get install -y \
 
 RUN git clone https://gitlab.com/gitlab-org/security-products/protocol-fuzzer-ce
 
-# we have an issue with builing with pin 3.19, so we stick to the previous commit
+# Pin to a known version
 RUN cd protocol-fuzzer-ce && \
-    git checkout 5fe846112907c700b267f93dfb5d9431b5770795
+    git checkout 5697f699dc43593d69c44b8521a50976dfff266e
 
 # Get specific mono packages
 WORKDIR /protocol-fuzzer-ce/paket/.paket
@@ -33,10 +33,16 @@ RUN wget https://github.com/fsprojects/Paket/releases/download/5.257.0/Paket.Res
 WORKDIR /protocol-fuzzer-ce
 
 # Download new PIN and change PIN version in build config
-RUN wget https://software.intel.com/sites/landingpage/pintool/downloads/pin-3.13-98189-g60a6ef199-gcc-linux.tar.gz
-RUN mv pin-3.13-98189-g60a6ef199-gcc-linux.tar.gz 3rdParty/pin/
-RUN cd 3rdParty/pin/ && tar -xf pin-3.13-98189-g60a6ef199-gcc-linux.tar.gz
-RUN sed -i s/pin-3.2-81205-gcc-linux/pin-3.13-98189-g60a6ef199-gcc-linux/g build/config/linux.py
+RUN wget https://software.intel.com/sites/landingpage/pintool/downloads/pin-3.20-98437-gf02b61307-gcc-linux.tar.gz
+RUN mv pin-3.20-98437-gf02b61307-gcc-linux.tar.gz 3rdParty/pin/
+RUN cd 3rdParty/pin/ && tar -xf pin-3.20-98437-gf02b61307-gcc-linux.tar.gz
+RUN sed -i s/pin-3.19-98425-gcc-linux/pin-3.20-98437-gf02b61307-gcc-linux/g build/config/linux.py
+# && \
+#    mv pin-3.20-98437-gf02b61307-gcc-linux pin-3.2-98437-gcc-linux
+#RUN sed -i s/pin-3.19-98425-gcc-linux/pin-3.2-98437-gcc-linux/g build/config/linux.py
+#RUN cd 3rdParty/pin/ && tar xzf pin-3.20-98437-gf02b61307-gcc-linux.tar.gz && \
+#    mv pin-3.20-98437-gf02b61307-gcc-linux pin-3.2-98437-gcc-linux
+#RUN sed -i s/pin-3.2-81205-gcc-linux/pin-3.20-98437-gf02b61307-gcc-linux/g build/config/linux.py
 
 # Install specific mono for compiling
 RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
@@ -45,13 +51,11 @@ RUN apt-get update -y
 RUN apt-get install -y mono-devel
 RUN mozroots --import --sync
 
-# Workaround for bugs
-RUN git checkout 0718181b6165713f63c069e4b045c2ddc5e7ff09
 # Patch bblocks.cpp
 # https://gitlab.com/gitlab-org/security-products/protocol-fuzzer-ce/-/issues/1
 # https://gitlab.com/gitlab-org/security-products/protocol-fuzzer-ce/-/merge_requests/7
-RUN sed -i 's/static void assert/static void myassert/g' core/BasicBlocks/bblocks.cpp
-RUN sed -i 's/::assert/::myassert/g' core/BasicBlocks/bblocks.cpp
+RUN sed -i '/^int main.*/itemplate<bool b>\nstruct StaticAssert {};\ntemplate <>\nstruct StaticAssert<true>\n{\n       static void myassert() {}\n};\n' core/BasicBlocks/bblocks.cpp
+RUN sed -i 's/STATIC_ASSERT(sizeof(size_t) == sizeof(ADDRINT))/StaticAssert<sizeof(size_t) == sizeof(ADDRINT)>::myassert()/g' core/BasicBlocks/bblocks.cpp
 # Patch BaseProgram.cs  error CS0219: Warning as Error: The variable `config' is assigned but its value is never used
 # https://gitlab.com/gitlab-org/security-products/protocol-fuzzer-ce/-/issues/3
 RUN sed -i 's/var config = new LicenseConfig();/\/\/var config = new LicenseConfig();/g' pro/Core/Runtime/BaseProgram.cs
