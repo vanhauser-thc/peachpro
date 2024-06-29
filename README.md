@@ -13,3 +13,14 @@ Hence I created a Dockerfile based on it that also generates documenation.
 
 This container has quite a few extra tools for when using `--entrypoint /bin/bash`
 that are likely only useful for me :)
+
+## Beware
+
+This only works with Debian Stretch and nothing else - and this release is not
+supported anymore. So builing this Dockerfile can stop functioning in the
+future at any time!
+
+You can pull from docker hub in such a case:
+```
+docker run --privileged -v /tmp:/tmp vanhauser/peachpro /tmp/my.pit
+```

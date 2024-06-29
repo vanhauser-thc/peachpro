@@ -3,7 +3,12 @@ MAINTAINER vh@thc.org
 
 ARG DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update
+# stretch is deprecated :-( workaround
+RUN echo deb http://archive.debian.org/debian/ stretch main non-free contrib > /etc/apt/sources.list
+RUN echo deb http://archive.debian.org/debian-security/ stretch/updates main non-free contrib >> /etc/apt/sources.list
+
+RUN apt-get update -y
+RUN apt-get upgrade -y
 
 RUN apt-get install -y \
     coreutils apt-utils wget curl openssl ca-certificates bash-completion \
@@ -17,11 +22,11 @@ RUN apt-get install -y \
     nodejs node-typescript wget \
     apt-transport-https dirmngr gnupg ca-certificates apt-utils
 
-RUN git clone https://gitlab.com/gitlab-org/security-products/protocol-fuzzer-ce
+RUN git clone https://gitlab.com/gitlab-org/security-products/protocol-fuzzer-ce.git/
 
 # Pin to a known version
-RUN cd protocol-fuzzer-ce && \
-    git checkout 5697f699dc43593d69c44b8521a50976dfff266e
+RUN cd protocol-fuzzer-ce
+# && git checkout 047a581e670169de6c65bba88afde6d9dd897bf6
 
 # Get specific mono packages
 WORKDIR /protocol-fuzzer-ce/paket/.paket
@@ -45,6 +50,8 @@ RUN sed -i s/pin-3.19-98425-gcc-linux/pin-3.20-98437-gf02b61307-gcc-linux/g buil
 #RUN sed -i s/pin-3.2-81205-gcc-linux/pin-3.20-98437-gf02b61307-gcc-linux/g build/config/linux.py
 
 # Install specific mono for compiling
+
+# If this fails just retry - the server is then overloaded
 RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
 RUN echo "deb https://download.mono-project.com/repo/debian stable-stretch main" | tee /etc/apt/sources.list.d/mono-official-stable.list
 RUN apt-get update -y
